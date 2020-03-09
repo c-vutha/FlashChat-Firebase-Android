@@ -1,5 +1,7 @@
 package com.cybernami.flashchatnewfirebase;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -15,7 +17,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -26,6 +27,7 @@ public class RegisterActivity extends AppCompatActivity {
     // Constants
     public static final String CHAT_PREFS = "ChatPrefs";
     public static final String DISPLAY_NAME_KEY = "username";
+    private static final String TAG = "Flash Chat : Signup";
 
     // TODO: Add member variables here:
     // UI references.
@@ -125,14 +127,25 @@ public class RegisterActivity extends AppCompatActivity {
     // TODO: Create a Firebase user
 
     public void createFirebaseUser() {
-        final String email = mUsernameView.getText().toString();
+        final String email = mEmailView.getText().toString();
         final String password = mPasswordView.getText().toString();
 
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
-                        Log.d("FlashChat", "User created : " + email + task.isComplete());
+                        Log.d(TAG, "onComplete: " + task.getResult());
+
+                        if (task.isSuccessful()) {
+                            Log.d("FlashChat", "User created : " + email + " => " + task.isComplete());
+                            saveDisplayName();
+                            Intent intent = new Intent(RegisterActivity.this, MainChatActivity.class);
+                            finish();
+                            startActivity(intent);
+                        } else {
+                            Log.e(TAG, "onComplete: login", task.getException());
+                            showErrorDialog("Registration attempt failed");
+                        }
                     }
                 });
     }
@@ -140,12 +153,24 @@ public class RegisterActivity extends AppCompatActivity {
 
     // TODO: Save the display name to Shared Preferences
 
+    private void saveDisplayName() {
+        String username = mUsernameView.getText().toString();
+        SharedPreferences prefs = getSharedPreferences(CHAT_PREFS, 0);
+        prefs.edit()
+                .putString(DISPLAY_NAME_KEY, username)
+                .apply();
+    }
+
 
     // TODO: Create an alert dialog to show in case registration failed
 
-    private void showErrorDialog() {
-        // new AlertDialog.Builder(this)
-                // .setMessage(R.string.)
+    private void showErrorDialog(String message) {
+        new AlertDialog.Builder(this)
+                .setTitle("Error")
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 
 
